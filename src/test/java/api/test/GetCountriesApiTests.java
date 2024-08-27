@@ -12,7 +12,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -73,7 +72,7 @@ public class GetCountriesApiTests {
     void verifyGetCountryByCodeResponseSchema() {
         Map<String, String> params = new HashMap<>();
         params.put("code", "VN");
-        RestAssured.get(GET_COUNTRY_BY_CODE_PATH)
+        RestAssured.get(GET_COUNTRY_BY_CODE_PATH, params)
                 .then()
                 .assertThat()
                 .body(matchesJsonSchemaInClasspath("json-schema/get-country-by-code-json-schema.json"));
@@ -96,6 +95,5 @@ public class GetCountriesApiTests {
         assertThat(200, equalTo(actualResponse.statusCode()));
         String actualResponseBody = actualResponse.asString();
         assertThat(String.format("Actual: %s\n Expected: %s\n", actualResponseBody, country), actualResponseBody, jsonEquals(country));
-
     }
 }
