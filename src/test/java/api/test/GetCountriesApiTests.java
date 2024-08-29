@@ -2,16 +2,20 @@ package api.test;
 
 import api.data.GetCountriesData;
 import api.model.country.Country;
+import api.model.country.CountryVersionTwo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.RestAssured;
+import io.restassured.common.mapper.TypeRef;
 import io.restassured.response.Response;
+import org.hamcrest.Matcher;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +25,7 @@ import static io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInC
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static net.javacrumbs.jsonunit.core.Option.IGNORING_ARRAY_ORDER;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.*;
 
 
 public class GetCountriesApiTests {
@@ -29,6 +33,7 @@ public class GetCountriesApiTests {
     private static final String GET_COUNTRIES_PATH = "/api/v1/countries";
     private static final String GET_COUNTRIES_V2_PATH = "/api/v2/countries";
     private static final String GET_COUNTRY_BY_CODE_PATH = "/api/v1/countries/{code}";
+    private static final String GET_COUNTRY_BY_FILTER = "/api/v3/countries";
 
     @BeforeAll
     static void setUp() {
@@ -96,4 +101,41 @@ public class GetCountriesApiTests {
         String actualResponseBody = actualResponse.asString();
         assertThat(String.format("Actual: %s\n Expected: %s\n", actualResponseBody, country), actualResponseBody, jsonEquals(country));
     }
+
+    static Stream<Map<String, String>> getCountriesByFilterProvider() {
+        List<Map<String, String>> inputs = new ArrayList<>();
+        inputs.add(Map.of("gdp", "5000", "operator", ">"));
+        inputs.add(Map.of("gdp", "5000", "operator", "<"));
+        inputs.add(Map.of("gdp", "5000", "operator", ">="));
+        inputs.add(Map.of("gdp", "5000", "operator", "<="));
+        inputs.add(Map.of("gdp", "5000", "operator", "=="));
+        inputs.add(Map.of("gdp", "5000", "operator", "!="));
+        return inputs.stream();
+    }
+
+    @ParameterizedTest
+    @MethodSource("getCountriesByFilterProvider")
+    void verifyGetCountryApiReturnCorrectDataWithCorrespondingFilter(Map<String, String> queryParams) {
+        Response actualResponse = RestAssured.given().log().all()
+                .queryParams(queryParams)
+                .get(GET_COUNTRY_BY_FILTER);
+        assertThat(200, equalTo(actualResponse.statusCode()));
+        List<CountryVersionTwo> countries = actualResponse.as(new TypeRef<List<CountryVersionTwo>>() {
+        });
+        countries.forEach(country -> {
+            float actualGdp = Float.parseFloat(queryParams.get("gdp"));
+            Matcher<Float> matcher = switch (queryParams.get("operator")) {
+                case ">" -> greaterThan(actualGdp);
+                case "<" -> lessThan(actualGdp);
+                case "<=" -> lessThanOrEqualTo(actualGdp);
+                case ">=" -> greaterThanOrEqualTo(actualGdp);
+                case "==" -> equalTo(actualGdp);
+                case "!=" -> not(equalTo(actualGdp));
+                default -> equalTo(actualGdp);
+            };
+            assertThat(country.getGdp(), matcher);
+        });
+    }
+
+
 }
