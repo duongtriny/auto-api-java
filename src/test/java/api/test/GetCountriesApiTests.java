@@ -2,6 +2,7 @@ package api.test;
 
 import api.data.GetCountriesData;
 import api.model.country.Country;
+import api.model.country.CountryPagination;
 import api.model.country.CountryVersionTwo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -34,6 +35,7 @@ public class GetCountriesApiTests {
     private static final String GET_COUNTRIES_V2_PATH = "/api/v2/countries";
     private static final String GET_COUNTRY_BY_CODE_PATH = "/api/v1/countries/{code}";
     private static final String GET_COUNTRY_BY_FILTER = "/api/v3/countries";
+    private static final String GET_COUNTRIES_PAGINATION = "/api/v4/countries";
 
     @BeforeAll
     static void setUp() {
@@ -135,6 +137,37 @@ public class GetCountriesApiTests {
             };
             assertThat(country.getGdp(), matcher);
         });
+    }
+
+    private CountryPagination getCountryPagination(int page, int size) {
+        Response actualResponseFirstPage = RestAssured.given().log().all()
+                .queryParam("page", page)
+                .queryParam("size", size)
+                .get(GET_COUNTRIES_PAGINATION);
+        return actualResponseFirstPage.as(new TypeRef<CountryPagination>() {
+        });
+    }
+
+    @Test
+    void verifyGetCountriesPagination() {
+        int pageSize = 2;
+        CountryPagination countryPaginationFirstPage = getCountryPagination(1, pageSize);
+        CountryPagination countryPaginationSecondPage = getCountryPagination(2, pageSize);
+        assertThat(countryPaginationFirstPage.getData().size(), equalTo(pageSize));
+        assertThat(countryPaginationSecondPage.getData().size(), equalTo(pageSize));
+        assertThat(countryPaginationFirstPage.getData().containsAll(countryPaginationSecondPage.getData()), is(false));
+        int sizeOfLastPage = countryPaginationFirstPage.getTotal() % pageSize;
+        int lastPage = countryPaginationFirstPage.getTotal() / pageSize;
+        if (sizeOfLastPage > 0) {
+            lastPage++;
+        }
+        if (sizeOfLastPage == 0) {
+            sizeOfLastPage = pageSize;
+        }
+        CountryPagination countryPaginationLastPage = getCountryPagination(lastPage, pageSize);
+        assertThat(countryPaginationLastPage.getData().size(), equalTo(sizeOfLastPage));
+        CountryPagination countryPaginationLastPagePlus = getCountryPagination(lastPage + 1, pageSize);
+        assertThat(countryPaginationLastPagePlus.getData().size(), equalTo(0));
     }
 
 
