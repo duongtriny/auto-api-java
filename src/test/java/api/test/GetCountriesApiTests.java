@@ -3,6 +3,7 @@ package api.test;
 import api.data.GetCountriesData;
 import api.model.country.Country;
 import api.model.country.CountryPagination;
+import api.model.country.CountryVersionThree;
 import api.model.country.CountryVersionTwo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -22,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static api.data.GetCountriesData.ALL_COUNTRIES_V3;
 import static io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInClasspath;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static net.javacrumbs.jsonunit.core.Option.IGNORING_ARRAY_ORDER;
@@ -36,6 +38,7 @@ public class GetCountriesApiTests {
     private static final String GET_COUNTRY_BY_CODE_PATH = "/api/v1/countries/{code}";
     private static final String GET_COUNTRY_BY_FILTER = "/api/v3/countries";
     private static final String GET_COUNTRIES_PAGINATION = "/api/v4/countries";
+    private static final String GET_COUNTRIES_PRIVATE = "/api/v5/countries";
 
     @BeforeAll
     static void setUp() {
@@ -170,5 +173,13 @@ public class GetCountriesApiTests {
         assertThat(countryPaginationLastPagePlus.getData().size(), equalTo(0));
     }
 
-
+    @Test
+    void verifyGetCountriesWithPrivateKey(){
+        Response actualResponse = RestAssured.given().log().all()
+                .header("api-key","private")
+                .get(GET_COUNTRIES_PRIVATE);
+        List<CountryVersionThree> countries = actualResponse.as(new TypeRef<List<CountryVersionThree>>() {
+        });
+        assertThat(actualResponse.asString(), jsonEquals(ALL_COUNTRIES_V3).when(IGNORING_ARRAY_ORDER));
+    }
 }
