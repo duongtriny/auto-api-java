@@ -3,8 +3,6 @@ package api.test;
 import api.data.GetCountriesData;
 import api.model.country.Country;
 import api.model.country.CountryPagination;
-import api.model.country.CountryVersionThree;
-import api.model.country.CountryVersionTwo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -103,7 +101,7 @@ public class GetCountriesApiTests {
         Response actualResponse = RestAssured.given().log().all()
                 .get(GET_COUNTRY_BY_CODE_PATH, params);
         assertThat(200, equalTo(actualResponse.statusCode()));
-        String actualResponseBody = actualResponse.asString();
+        Country actualResponseBody = actualResponse.as(Country.class);
         assertThat(String.format("Actual: %s\n Expected: %s\n", actualResponseBody, country), actualResponseBody, jsonEquals(country));
     }
 
@@ -125,7 +123,7 @@ public class GetCountriesApiTests {
                 .queryParams(queryParams)
                 .get(GET_COUNTRY_BY_FILTER);
         assertThat(200, equalTo(actualResponse.statusCode()));
-        List<CountryVersionTwo> countries = actualResponse.as(new TypeRef<List<CountryVersionTwo>>() {
+        List<Country> countries = actualResponse.as(new TypeRef<List<Country>>() {
         });
         countries.forEach(country -> {
             float actualGdp = Float.parseFloat(queryParams.get("gdp"));
@@ -178,7 +176,7 @@ public class GetCountriesApiTests {
         Response actualResponse = RestAssured.given().log().all()
                 .header("api-key","private")
                 .get(GET_COUNTRIES_PRIVATE);
-        List<CountryVersionThree> countries = actualResponse.as(new TypeRef<List<CountryVersionThree>>() {
+        List<Country> countries = actualResponse.as(new TypeRef<List<Country>>() {
         });
         assertThat(actualResponse.asString(), jsonEquals(ALL_COUNTRIES_V3).when(IGNORING_ARRAY_ORDER));
     }
