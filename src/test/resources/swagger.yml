@@ -1,0 +1,415 @@
+openapi: "3.0.3"
+info:
+  title: API For Learning Testing
+  version: "1.0"
+servers:
+  - url: http://localhost:3000
+paths:
+  /api/login:
+    post:
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                  example: "123456"
+              required:
+                - username
+                - password
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1ZjIwZjQwZjQwZjQwZjQwZjQwZjQwZjQiLCJpYXQiOjE1OTk5NjYwNzcsImV4cCI6MTU5OTk2NjA3N30.7"
+                  timeout:
+                    type: number
+                    example: 3600
+                    description: "Token will be expired in 3600 seconds"
+          description: Successful response
+  /api/user:
+    post:
+      summary: Create a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateUserSuccess"
+
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateUserBadRequest"
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+        "500":
+          description: Internal server error
+  /api/user/{id}:
+    get:
+        summary: Get user information
+        responses:
+          "200":
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/GetUser"
+            description: Successful response
+          "400":
+            content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/CreateUserBadRequest"
+            description: Bad request
+          "401":
+            description: Unauthorized
+          "403":
+            description: Forbidden
+          "404":  
+            description: Not found
+          "500":    
+            description: Internal server error
+    put:
+      summary: Update user information
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpdateUserSuccess"
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateUserBadRequest"
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+        "500":
+          description: Internal server error
+    delete:
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: User ID
+      summary: Delete user
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User deleted"
+          description: Successful response
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateUserBadRequest"
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+        "500":
+          description: Internal server error
+  /api/card:
+    post:
+      summary: Create a new membership card
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                userId:
+                  type: string
+                  format: uuid
+                  example: "123e4567-e89b-12d3-a456-426614174000"
+                type:
+                  type: string
+                  enum: ["GOLD", "SILVER", "PLATINUM"]
+              required:
+                - userId
+                - type
+
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  cardNumber:
+                    type: string
+                    pattern: '^\d{16}$'
+                    example: "1234567890123456"
+                  cardHolder:
+                    type: string
+                    example: "John Doe"
+                  expiredDate:
+                    type: string
+                    format: date
+                    pattern: '^\d{2}-\d{2}-\d{4}$'
+                    description: "Date format: MM-dd-yyyy"
+                    example: "01-23-2025"
+
+        "400":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateUserBadRequest"
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not found
+        "500":
+          description: Internal server error
+components:
+  schemas:
+    GetUser:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        firstName:
+          type: string
+        lastName:
+          type: string
+        middleName:
+          type: string
+        birthday:
+          type: string
+          format: date
+          pattern: '^\d{2}-\d{2}-\d{4}$'
+          description: "Date format: MM-dd-yyyy"
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+          pattern: '^\d{10,11}$'
+        addresses:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+                example: "123e4567-e89b-12d3-a456-426614174000"
+              streetNumber:
+                type: string
+                example: "123"
+              street:
+                type: string
+                example: "Main St"
+              ward:
+                type: string
+                example: "Ward 1"
+              district:
+                type: string
+                example: "District 1"
+              city:
+                type: string
+                example: "Thu Duc"
+              state:
+                type: string
+                example: "Ho Chi Minh"
+              zip:
+                type: string
+                pattern: '^\d{5}(?:-\d{4})?$'
+                example: "70000"
+              country:
+                type: string
+                pattern: "^[A-Z]{2}$"
+                example: "VN"
+              createdAt:
+                type: string
+                format: date-time
+                description: "Date format: yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+              updatedAt:
+                type: string
+                format: date-time
+                description: "Date format: yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+        createdAt:
+          type: string
+          format: date-time
+          description: "Date format: yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+        updatedAt:
+          type: string
+          format: date-time
+          description: "Date format: yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+    User:
+      type: object
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: "John"
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: "Doe"
+        middleName:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: "Smith"
+        birthday:
+          type: string
+          format: date
+          pattern: '^\d{2}-\d{2}-\d{4}$'
+          description: "Date format: MM-dd-yyyy. User must be at least 18 years old"
+          example: "01-23-2000"
+        email:
+          type: string
+          format: email
+          example: "[email protected]"
+        phone:
+          type: string
+          pattern: '^\d{10,11}$'
+          example: "0123456789"
+          description: "Phone number must not be duplicated"
+        addresses:
+          type: array
+          items:
+            type: object
+            properties:
+              streetNumber:
+                type: string
+                minLength: 1
+                maxLength: 10
+                example: "123"
+              street:
+                type: string
+                minLength: 1
+                maxLength: 100
+                example: "Main St"
+              ward:
+                type: string
+                minLength: 1
+                maxLength: 100
+                example: "Ward 1"
+              district:
+                type: string
+                minLength: 1
+                maxLength: 100
+                example: "District 1"
+              city:
+                type: string
+                minLength: 1
+                maxLength: 100
+                example: "Thu Duc"
+              state:
+                type: string
+                minLength: 1
+                maxLength: 100
+                example: "Ho Chi Minh"
+              zip:
+                type: string
+                pattern: '^\d{5}(?:-\d{4})?$'
+                example: "70000"
+              country:
+                type: string
+                minLength: 2
+                maxLength: 2
+                pattern: "^[A-Z]{2}$"
+                example: "VN"
+            required:
+              - streetNumber
+              - street
+              - ward
+              - district
+              - city
+              - state
+              - zip
+              - country
+      required:
+        - firstName
+        - lastName
+        - birthday
+        - phone
+        - email
+    CreateUserSuccess:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        message:
+          type: string
+          example: "User created"
+    UpdateUserSuccess:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "123e4567-e89b-12d3-a456-426614174000"
+        message:
+          type: string
+          example: "User Updated"
+    CreateUserBadRequest:
+      type: object
+      properties:
+        field:
+          type: string
+          example: "email"
+        message:
+          type: string
+          example: "Email is invalid"
