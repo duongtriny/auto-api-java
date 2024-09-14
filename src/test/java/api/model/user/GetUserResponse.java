@@ -11,15 +11,8 @@ import java.util.List;
 @AllArgsConstructor
 @Getter
 @Setter
-public class GetUserResponse {
+public class GetUserResponse<T> extends User<T> {
     private String id;
     private String createdAt;
     private String updatedAt;
-    private String firstName;
-    private String lastName;
-    private String middleName;
-    private String birthday;
-    private String email;
-    private String phone;
-    private List<AddressResponse> addresses;
 }
