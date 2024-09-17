@@ -1,8 +1,11 @@
 package api.test;
 
+import api.data.GetCountriesData;
+import api.model.country.Country;
 import api.model.login.LoginInput;
 import api.model.login.LoginResponse;
 import api.model.user.*;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.RestAssured;
@@ -11,17 +14,20 @@ import io.restassured.response.Response;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.*;
 import static org.hamcrest.text.IsBlankString.blankString;
 
 public class CreateUserApiTests {
@@ -100,6 +106,44 @@ public class CreateUserApiTests {
             datetimeVerifier(beforeExecution, addressUpdatedAt);
         });
     }
+
+
+    static Stream<Arguments> validationUserProvider() {
+        List<Arguments> argumentsList = new ArrayList<>();
+        User<Address> user = User.getDefaultWithEmail();
+        user.setFirstName(null);
+        argumentsList.add(Arguments.arguments("Verify API return 400 when firstName is null", user,
+                new ValidationResponse("", "must have required property 'firstName'")));
+        user = User.getDefaultWithEmail();
+        user.setFirstName("");
+        argumentsList.add(Arguments.arguments("Verify API return 400 when firstName is empty", user,
+                new ValidationResponse("/firstName", "must NOT have fewer than 1 characters")));
+        user = User.getDefaultWithEmail();
+        user.setLastName(null);
+        argumentsList.add(Arguments.arguments("Verify API return 400 when lastName is null", user,
+                new ValidationResponse("", "must have required property 'lastName'")));
+
+        user = User.getDefaultWithEmail();
+        user.setLastName("");
+        argumentsList.add(Arguments.arguments("Verify API return 400 when lastName is empty", user,
+                new ValidationResponse("/lastName", "must NOT have fewer than 1 characters")));
+        return argumentsList.stream();
+    }
+
+    @ParameterizedTest()
+    @MethodSource("validationUserProvider")
+    void verifyRequiredFieldsWhenCreatingUser(String testcase, User<Address> user, ValidationResponse expectedResponse) {
+        Response createUserResponse = RestAssured.given().log().all()
+                .header("Content-Type", "application/json")
+                .header(AUTHORIZATION_HEADER, TOKEN)
+                .body(user)
+                .post(CREATE_USER_PATH);
+        System.out.printf("Create user response: %s%n", createUserResponse.asString());
+        assertThat(createUserResponse.statusCode(), equalTo(400));
+        ValidationResponse actual = createUserResponse.as(ValidationResponse.class);
+        assertThat(actual, samePropertyValuesAs(expectedResponse));
+    }
+
 
     private void datetimeVerifier(Instant timeBeforeExecution, Instant actualTime) {
         assertThat(actualTime.isAfter(timeBeforeExecution), equalTo(true));
