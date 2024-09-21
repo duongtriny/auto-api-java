@@ -3,11 +3,17 @@ package api.test;
 import api.model.login.LoginInput;
 import api.model.login.LoginResponse;
 import api.model.user.*;
+import api.model.user.dto.DbAddress;
+import api.model.user.dto.DbUser;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.RestAssured;
 import io.restassured.common.mapper.TypeRef;
 import io.restassured.response.Response;
+import org.hibernate.SessionFactory;
+import org.hibernate.boot.MetadataSources;
+import org.hibernate.boot.registry.StandardServiceRegistry;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,6 +25,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
@@ -36,11 +43,28 @@ public class CreateUserApiTests {
     private static String TOKEN;
     private static long TIMEOUT = -1;
     private static long TIME_BEFORE_GET_TOKEN = -1;
+    private static SessionFactory sessionFactory;
 
     @BeforeAll
     static void setUp() {
         RestAssured.baseURI = "http://localhost";
         RestAssured.port = 3000;
+        // A SessionFactory is set up once for an application!
+        final StandardServiceRegistry registry =
+                new StandardServiceRegistryBuilder()
+                        .build();
+        try {
+            sessionFactory = new MetadataSources(registry)
+                    .addAnnotatedClass(DbUser.class)
+                    .addAnnotatedClass(DbAddress.class)
+                    .buildMetadata()
+                    .buildSessionFactory();
+
+        } catch (Exception e) {
+            // The registry would be destroyed by the SessionFactory, but we
+            // had trouble building the SessionFactory so destroy it manually.
+            StandardServiceRegistryBuilder.destroy(registry);
+        }
     }
 
     @BeforeEach
@@ -59,6 +83,62 @@ public class CreateUserApiTests {
             TOKEN = "Bearer ".concat(loginResponse.getToken());
             TIMEOUT = loginResponse.getTimeout();
         }
+    }
+
+    @Test
+    void verifyStaffCreateUserSuccessfullyByDatabase() {
+        Address address = Address.getDefault();
+        User<Address> user = User.getDefault();
+        String randomEmail = String.format("auto_api_%s@abc.com", System.currentTimeMillis());
+        user.setEmail(randomEmail);
+        user.setAddresses(List.of(address));
+        //Store the moment before execution
+        Instant beforeExecution = Instant.now();
+        Response createUserResponse = RestAssured.given().log().all()
+                .header("Content-Type", "application/json")
+                .header(AUTHORIZATION_HEADER, TOKEN)
+                .body(user)
+                .post(CREATE_USER_PATH);
+        System.out.printf("Create user response: %s%n", createUserResponse.asString());
+        assertThat(createUserResponse.statusCode(), equalTo(200));
+        CreateUserResponse actual = createUserResponse.as(CreateUserResponse.class);
+        createdUserIds.add(actual.getId());
+        assertThat(actual.getId(), not(blankString()));
+        assertThat(actual.getMessage(), equalTo("Customer created"));
+
+        //Build expected user
+        ObjectMapper mapper = new ObjectMapper();
+        GetUserResponse<AddressResponse> expectedUser = mapper.convertValue(user, new TypeReference<GetUserResponse<AddressResponse>>() {
+        });
+        expectedUser.setId(actual.getId());
+        expectedUser.getAddresses().get(0).setCustomerId(actual.getId());
+
+        sessionFactory.inTransaction(session -> {
+            DbUser dbUser = session.createSelectionQuery("from DbUser where id=:id", DbUser.class)
+                    .setParameter("id", UUID.fromString(actual.getId()))
+                    .getSingleResult();
+            List<DbAddress> dbAddresses = session.createSelectionQuery("from DbAddress where customerId=:customerId", DbAddress.class)
+                    .setParameter("customerId", UUID.fromString(actual.getId()))
+                    .getResultList();
+            GetUserResponse<AddressResponse> actualUser = mapper.convertValue(dbUser, new TypeReference<GetUserResponse<AddressResponse>>() {
+            });
+            actualUser.setAddresses(mapper.convertValue(dbAddresses, new TypeReference<List<AddressResponse>>() {
+            }));
+
+            assertThat(actualUser, jsonEquals(expectedUser).whenIgnoringPaths("createdAt", "updatedAt",
+                    "addresses[*].id", "addresses[*].createdAt", "addresses[*].updatedAt"));
+            Instant userCreatedAt = Instant.parse(actualUser.getCreatedAt());
+            datetimeVerifier(beforeExecution, userCreatedAt);
+            Instant userUpdatedAt = Instant.parse(actualUser.getUpdatedAt());
+            datetimeVerifier(beforeExecution, userUpdatedAt);
+            actualUser.getAddresses().forEach(actualAddress -> {
+                assertThat(actualAddress.getId(), not(blankString()));
+                Instant addressCreatedAt = Instant.parse(actualAddress.getCreatedAt());
+                datetimeVerifier(beforeExecution, addressCreatedAt);
+                Instant addressUpdatedAt = Instant.parse(actualAddress.getUpdatedAt());
+                datetimeVerifier(beforeExecution, addressUpdatedAt);
+            });
+        });
     }
 
     @Test
