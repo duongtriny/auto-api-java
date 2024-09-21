@@ -1,6 +1,8 @@
 package api.test;
 
-import api.model.login.LoginInput;
+import api.common.DatabaseConnection;
+import api.common.LoginUtils;
+import api.common.RestAssuredSetUp;
 import api.model.login.LoginResponse;
 import api.model.user.*;
 import api.model.user.dto.DbAddress;
@@ -11,9 +13,6 @@ import io.restassured.RestAssured;
 import io.restassured.common.mapper.TypeRef;
 import io.restassured.response.Response;
 import org.hibernate.SessionFactory;
-import org.hibernate.boot.MetadataSources;
-import org.hibernate.boot.registry.StandardServiceRegistry;
-import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,57 +27,29 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import static api.common.ConstantUtils.*;
 import static net.javacrumbs.jsonunit.JsonMatchers.jsonEquals;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.text.IsBlankString.blankString;
 
 public class CreateUserApiTests {
-    private static final String LOGIN_PATH = "/api/login";
-    private static final String CREATE_USER_PATH = "/api/user";
-    private static final String DELETE_USER_PATH = "/api/user/{id}";
-    private static final String GET_USER_PATH = "/api/user/{id}";
-    private static final String AUTHORIZATION_HEADER = "Authorization";
     private static List<String> createdUserIds = new ArrayList<>();
     private static String TOKEN;
     private static long TIMEOUT = -1;
     private static long TIME_BEFORE_GET_TOKEN = -1;
-    private static SessionFactory sessionFactory;
+    private static SessionFactory sessionFactory = DatabaseConnection.getSession();
 
     @BeforeAll
     static void setUp() {
-        RestAssured.baseURI = "http://localhost";
-        RestAssured.port = 3000;
-        // A SessionFactory is set up once for an application!
-        final StandardServiceRegistry registry =
-                new StandardServiceRegistryBuilder()
-                        .build();
-        try {
-            sessionFactory = new MetadataSources(registry)
-                    .addAnnotatedClass(DbUser.class)
-                    .addAnnotatedClass(DbAddress.class)
-                    .buildMetadata()
-                    .buildSessionFactory();
-
-        } catch (Exception e) {
-            // The registry would be destroyed by the SessionFactory, but we
-            // had trouble building the SessionFactory so destroy it manually.
-            StandardServiceRegistryBuilder.destroy(registry);
-        }
+        RestAssuredSetUp.setUp();
     }
 
     @BeforeEach
     void beforeEach() {
         if (TIMEOUT == -1 || (System.currentTimeMillis() - TIME_BEFORE_GET_TOKEN) > TIMEOUT * 0.8) {
-            //Get token
-            LoginInput loginInput = new LoginInput("staff", "1234567890");
             TIME_BEFORE_GET_TOKEN = System.currentTimeMillis();
-            Response actualResponse = RestAssured.given().log().all()
-                    .header("Content-Type", "application/json")
-                    .body(loginInput)
-                    .post(LOGIN_PATH);
-            assertThat(actualResponse.statusCode(), equalTo(200));
-            LoginResponse loginResponse = actualResponse.as(LoginResponse.class);
+            LoginResponse loginResponse = LoginUtils.login();
             assertThat(loginResponse.getToken(), not(blankString()));
             TOKEN = "Bearer ".concat(loginResponse.getToken());
             TIMEOUT = loginResponse.getTimeout();
@@ -244,5 +215,6 @@ public class CreateUserApiTests {
                     .pathParam("id", id)
                     .delete(DELETE_USER_PATH);
         });
+        sessionFactory.close();
     }
 }

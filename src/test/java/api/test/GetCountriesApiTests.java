@@ -1,5 +1,6 @@
 package api.test;
 
+import api.common.RestAssuredSetUp;
 import api.data.GetCountriesData;
 import api.model.country.Country;
 import api.model.country.CountryPagination;
@@ -40,8 +41,7 @@ public class GetCountriesApiTests {
 
     @BeforeAll
     static void setUp() {
-        RestAssured.baseURI = "http://localhost";
-        RestAssured.port = 3000;
+        RestAssuredSetUp.setUp();
     }
 
     @Test
