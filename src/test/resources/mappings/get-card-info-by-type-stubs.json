@@ -1,0 +1,56 @@
+{
+  "mappings": [
+    {
+      "request": {
+        "urlPath": "/learn-matchers",
+        "method": "GET",
+        "queryParameters": {
+          "a": {
+            "equalTo": "aaa",
+            "caseInsensitive": true
+          },
+          "b": {
+            "contains": "xyz"
+          }
+        },
+        "headers": {
+          "api-key": {
+            "equalTo": "a-private-key"
+          },
+          "Authorization": {
+            "contains": "Bearer"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "Ahihi",
+        "headers": {
+          "Content-Type": "text/plain"
+        }
+      }
+    },
+    {
+      "request": {
+        "urlPath": "/learn-matchers",
+        "method": "POST",
+        "bodyPatterns": [
+          {
+            "equalToJson": {
+              "total_results": 4
+            }
+          }
+        ]
+      },
+      "response": {
+        "status": 200,
+        "jsonBody": {
+          "message":"My name is Json"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      }
+    }
+  ]
+}
