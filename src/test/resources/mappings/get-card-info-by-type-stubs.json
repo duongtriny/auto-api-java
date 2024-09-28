@@ -2,50 +2,82 @@
   "mappings": [
     {
       "request": {
-        "urlPath": "/learn-matchers",
+        "urlPath": "/get-card-info-by-type",
         "method": "GET",
         "queryParameters": {
-          "a": {
-            "equalTo": "aaa",
+          "type": {
+            "equalTo": "SLIVER",
             "caseInsensitive": true
-          },
-          "b": {
-            "contains": "xyz"
           }
         },
         "headers": {
           "api-key": {
             "equalTo": "a-private-key"
-          },
-          "Authorization": {
-            "contains": "Bearer"
           }
         }
       },
       "response": {
         "status": 200,
-        "body": "Ahihi",
+        "jsonBody": {
+          "cardColor": "Sliver",
+          "textColor": "Black",
+          "material": "Plastic"
+        },
         "headers": {
-          "Content-Type": "text/plain"
+          "Content-Type": "application/json"
         }
       }
     },
     {
       "request": {
-        "urlPath": "/learn-matchers",
-        "method": "POST",
-        "bodyPatterns": [
-          {
-            "equalToJson": {
-              "total_results": 4
-            }
+        "urlPath": "/get-card-info-by-type",
+        "method": "GET",
+        "queryParameters": {
+          "type": {
+            "equalTo": "GOLD",
+            "caseInsensitive": true
           }
-        ]
+        },
+        "headers": {
+          "api-key": {
+            "equalTo": "a-private-key"
+          }
+        }
       },
       "response": {
         "status": 200,
         "jsonBody": {
-          "message":"My name is Json"
+          "cardColor": "Coral",
+          "textColor": "White",
+          "material": "Plastic"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      }
+    },
+    {
+      "request": {
+        "urlPath": "/get-card-info-by-type",
+        "method": "GET",
+        "queryParameters": {
+          "type": {
+            "equalTo": "PLATINUM",
+            "caseInsensitive": true
+          }
+        },
+        "headers": {
+          "api-key": {
+            "equalTo": "a-private-key"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "jsonBody": {
+          "cardColor": "Black",
+          "textColor": "Gray",
+          "material": "Metal"
         },
         "headers": {
           "Content-Type": "application/json"
