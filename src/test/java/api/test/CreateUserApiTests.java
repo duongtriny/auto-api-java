@@ -33,28 +33,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.text.IsBlankString.blankString;
 
-public class CreateUserApiTests {
-    private static List<String> createdUserIds = new ArrayList<>();
-    private static String TOKEN;
-    private static long TIMEOUT = -1;
-    private static long TIME_BEFORE_GET_TOKEN = -1;
-    private static SessionFactory sessionFactory = DatabaseConnection.getSession();
-
-    @BeforeAll
-    static void setUp() {
-        RestAssuredSetUp.setUp();
-    }
-
-    @BeforeEach
-    void beforeEach() {
-        if (TIMEOUT == -1 || (System.currentTimeMillis() - TIME_BEFORE_GET_TOKEN) > TIMEOUT * 0.8) {
-            TIME_BEFORE_GET_TOKEN = System.currentTimeMillis();
-            LoginResponse loginResponse = LoginUtils.login();
-            assertThat(loginResponse.getToken(), not(blankString()));
-            TOKEN = "Bearer ".concat(loginResponse.getToken());
-            TIMEOUT = loginResponse.getTimeout();
-        }
-    }
+public class CreateUserApiTests extends MasterTest {
 
     @Test
     void verifyStaffCreateUserSuccessfullyByDatabase() {
@@ -204,17 +183,5 @@ public class CreateUserApiTests {
     private void datetimeVerifier(Instant timeBeforeExecution, Instant actualTime) {
         assertThat(actualTime.isAfter(timeBeforeExecution), equalTo(true));
         assertThat(actualTime.isBefore(Instant.now()), equalTo(true));
-    }
-
-    @AfterAll
-    static void tearDown() {
-        //Clean data
-        createdUserIds.forEach(id -> {
-            RestAssured.given().log().all()
-                    .header(AUTHORIZATION_HEADER, TOKEN)
-                    .pathParam("id", id)
-                    .delete(DELETE_USER_PATH);
-        });
-        sessionFactory.close();
     }
 }
