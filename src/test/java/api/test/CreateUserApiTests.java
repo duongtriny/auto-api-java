@@ -1,9 +1,5 @@
 package api.test;
 
-import api.common.DatabaseConnection;
-import api.common.LoginUtils;
-import api.common.RestAssuredSetUp;
-import api.model.login.LoginResponse;
 import api.model.user.*;
 import api.model.user.dto.DbAddress;
 import api.model.user.dto.DbUser;
@@ -12,10 +8,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.restassured.RestAssured;
 import io.restassured.common.mapper.TypeRef;
 import io.restassured.response.Response;
-import org.hibernate.SessionFactory;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;

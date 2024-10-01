@@ -8,6 +8,7 @@ import io.restassured.response.Response;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+import static api.common.ConfigUtils.getDotenv;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
@@ -23,7 +24,7 @@ public class LoginApiTests {
 
     @Test
     void verifyStaffLoginSuccessful() {
-        LoginInput loginInput = new LoginInput("staff", "1234567890");
+        LoginInput loginInput = new LoginInput(getDotenv().get("username"), getDotenv().get("password"));
         Response actualResponse = RestAssured.given().log().all()
                 .header("Content-Type", "application/json")
                 .body(loginInput)
