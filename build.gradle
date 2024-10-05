@@ -8,6 +8,15 @@ version = '1.0-SNAPSHOT'
 repositories {
     mavenCentral()
 }
+def allureVersion = "2.25.0"
+def aspectJVersion = '1.9.21'
+// Define configuration for AspectJ agent
+configurations {
+    agent {
+        canBeResolved = true
+        canBeConsumed = true
+    }
+}
 
 dependencies {
     testCompileOnly 'org.projectlombok:lombok:1.18.34'
@@ -23,9 +32,16 @@ dependencies {
     testImplementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.17.2'
     testImplementation "org.wiremock:wiremock:3.9.1"
     testImplementation 'io.github.cdimascio:dotenv-java:3.0.0'
+    // Import allure-bom to ensure correct versions of all the dependencies are used
+    testImplementation platform("io.qameta.allure:allure-bom:$allureVersion")
+    // Add necessary Allure dependencies to dependencies section
+    testImplementation "io.qameta.allure:allure-junit5"
+    // Add aspectjweaver dependency
+    agent "org.aspectj:aspectjweaver:$aspectJVersion"
 }
 
 test {
     environment "test.env", "local.env"
     useJUnitPlatform()
+    jvmArgs = [ "-javaagent:${configurations.agent.singleFile}" ]
 }
